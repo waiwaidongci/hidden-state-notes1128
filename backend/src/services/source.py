@@ -14,9 +14,10 @@ def create_study(db,data,actor):
  db.commit();record(db,actor,'study.imported',{'study_id':study.id,'traces':len(data.traces)});return row(study)
 
 def edit_trace(db,id,data,actor):
- trace=db.get(ObservationTrace,id)
+ trace=db.scalar(select(ObservationTrace).where(ObservationTrace.id==id).with_for_update())
  if not trace:raise HTTPException(404,'轨迹不存在')
+ if data.base_revision is not None and data.base_revision!=trace.revision:raise HTTPException(409,'轨迹已被他人修订，请刷新底稿后重试')
  study=db.get(SequenceStudy,trace.study_id)
  try:validate_traces(study.symbols,[dict(row(trace),tokens=data.tokens)])
  except ValueError as error:raise HTTPException(422,str(error))
- trace.tokens=data.tokens;db.commit();record(db,actor,'trace.revised',{'trace_id':id});return row(trace)
+ trace.tokens=data.tokens;trace.revision+=1;db.commit();record(db,actor,'trace.revised',{'trace_id':id,'revision':trace.revision});return row(trace)

@@ -20,9 +20,9 @@ docker compose exec -T backend python -m scripts.seed_demo
 
 |账号 / 密码|权限与主要页面|典型动作|
 |---|---|---|
-|admin@yanxi.demo / Yanxi2026!|六页、写入与审批|批准/退回固定模型工况核对|
-|analyst@yanxi.demo / Yanxi2026!|六页、导入/版本/轨迹/运行/说明|冻结固定参数、修订观测、排队；审批403|
-|viewer@yanxi.demo / Yanxi2026!|六页只读、批准CSV|对照后验和路径、导出；写入403|
+|admin@yanxi.demo / Yanxi2026!|七页、写入与审批|批准/退回固定模型工况核对|
+|analyst@yanxi.demo / Yanxi2026!|七页、导入/版本/轨迹/纠错/运行/说明|冻结固定参数、修订观测、排队；审批403|
+|viewer@yanxi.demo / Yanxi2026!|七页只读、批准CSV|对照后验和路径、导出；写入403|
 
 `.env.example`含FE/API/DB端口、MYSQL_DATABASE/USER/PASSWORD/ROOT_PASSWORD、JWT_SECRET、SEED_DEMO、RATE_LIMIT_WRITES（默认60）。演示密码和JWT secret仅用于本地，部署须设置自己的值。首次启动自动seed；独立重复执行幂等，不覆盖用户轨迹、版本文字和说明。
 
@@ -32,13 +32,14 @@ Compose恰好frontend/backend/worker/db/redis五服务，各有健康检查。Ng
 
 1. 09:00，许汐登录“隐态总览”，先读固定参数、非故障事实的解释边界。
 2. 在“观测与版本”核对 `YX-33A 常规观测序列`、`yx-fixed-hmm-1-202611.json` 和 `YX1-T001` 的40个观测码；字母表A/B/C/D与模型发射列顺序必须一致。
-3. 对照 `YX1-固定参数-v1` 的π、转移A、发射B。真实0保持0，不加epsilon；任何超行和容差的输入拒绝。
-4. “固定模型推断”默认选前20条，可清空/勾选1–30条。选模型版本后提交；任务冻结profile与所选轨迹，不更新参数。
-5. A研究20条/800码，实际总logL约−969.126197943428。首条logL约−49.50643547，线性概率以3.159572e−22等科学记数法展示，不误显示为0。
-6. 在“后验与联合路径”逐轨迹看真实状态带、每时刻后验和Viterbi联合logP；单点最高态拼接可能违反零转移，不能直接当联合MAP。
-7. 核对 `YX-33C 受限发射序列`：若新观测出现初态不可能发射的C，任务明确失败，不把数值下溢当不可能，也不把0改成小正数。
-8. 提交工况核对说明，回看设备记录和码含义。顾临批准/退回；程沅下载批准快照CSV。重复审批409，后续改轨迹不改写既有结果。
-9. 在“过程留痕”核对导入、版本冻结、轨迹修订、队列、审批和导出；HTTP响应含X-Request-ID。
+3. 发现底稿观测码错误时在“整批纠错”逐条填写新观测码并生成预览，对照改前改后与基准版本；确认才整批落底稿——确认时任一条已被他人改动（单条修订或另一批次）则整批拒绝并列出冲突，未冲突条目同样保持原样；同一预览重复确认只记一次变更。
+4. 对照 `YX1-固定参数-v1` 的π、转移A、发射B。真实0保持0，不加epsilon；任何超行和容差的输入拒绝。
+5. “固定模型推断”默认选前20条，可清空/勾选1–30条。选模型版本后提交；任务冻结profile与所选轨迹，不更新参数。
+6. A研究20条/800码，实际总logL约−969.126197943428。首条logL约−49.50643547，线性概率以3.159572e−22等科学记数法展示，不误显示为0。
+7. 在“后验与联合路径”逐轨迹看真实状态带、每时刻后验和Viterbi联合logP；单点最高态拼接可能违反零转移，不能直接当联合MAP。
+8. 核对 `YX-33C 受限发射序列`：若新观测出现初态不可能发射的C，任务明确失败，不把数值下溢当不可能，也不把0改成小正数。
+9. 提交工况核对说明，回看设备记录和码含义。顾临批准/退回；程沅下载批准快照CSV。重复审批409，后续改轨迹不改写既有结果。
+10. 在“过程留痕”核对导入、版本冻结、轨迹修订、整批纠错、队列、审批和导出；HTTP响应含X-Request-ID。
 
 ## 固定HMM数值口径
 
@@ -58,13 +59,13 @@ Viterbi在相同log空间用max替代sum，保留每个状态的最佳前缀路�
 
 ## 实体、工程与校验
 
-78个有职责的Python/TS/Vue/CSS文件（不含空包、依赖和dist）。五实体SequenceStudy → ModelProfile → ObservationTrace → InferenceRun → InterpretationNote贯穿ORM/schema/service/routes、前端API/store和六页：隐态总览、观测与版本、固定模型推断、后验与联合路径、工况核对、过程留痕。
+81个有职责的Python/TS/Vue/CSS文件（不含空包、依赖和dist）。五实体SequenceStudy → ModelProfile → ObservationTrace → InferenceRun → InterpretationNote贯穿ORM/schema/service/routes、前端API/store和七页：隐态总览、观测与版本、整批纠错、固定模型推断、后验与联合路径、工况核对、过程留痕；TraceCorrectionBatch记录整批纠错的预览条目（改前/改后/基准版本）、冲突明细与确认人。
 
 前端 `src/{api,stores,types,components/common,hooks,pages,router,utils,constants}`；后端 `src/{routes,controllers,services,models,schemas,middlewares,utils,constants,config}`，另scripts/seed_demo.py与migrations/。StateBands、InferenceSummary、ProfileMatrix、RunList多页复用，PosteriorGrid只展示后端后验；useTask/useRoute与format处理交互。Vue的id=app/mount('#app')匹配。
 
-Role/RunStatus/NoteStatus位于 `backend/src/constants/enums.py`，前端对应 `frontend/src/constants/enums.ts`。JWT、审计、RequestID/Error/Redis写限流三个中间件形成横切链路。按令牌摘要或无令牌IP分钟计数，默认60写请求，429含Retry-After；计数不可用503，健康GET不计。审批行锁使draft只审一次，导出取result_snapshot。
+Role/RunStatus/NoteStatus/BatchStatus位于 `backend/src/constants/enums.py`，前端对应 `frontend/src/constants/enums.ts`。JWT、审计、RequestID/Error/Redis写限流三个中间件形成横切链路。按令牌摘要或无令牌IP分钟计数，默认60写请求，429含Retry-After；计数不可用503，健康GET不计。审批行锁使draft只审一次，导出取result_snapshot。轨迹revision是乐观版本：单条修订与整批确认都推进版本，批次确认行锁后逐条比对基准版本，任一不符整批拒绝409且未冲突条目保持原样；已应用批次重复确认幂等，只记一次变更。
 
-每研究1–240轨迹，每条1–200码，单任务1–30条、状态≤5；重复ID、外研究轨迹/版本、未知码、非法矩阵维度、NaN/Inf/bool概率或ID、安全行和以422拒绝。任务提交时同时冻结profile与所选trace，之后修订源记录不影响worker输入或批准快照。
+每研究1–240轨迹，每条1–200码，单任务1–30条、状态≤5，单批纠错1–240条；重复ID、外研究轨迹/版本、未知码、非法矩阵维度、NaN/Inf/bool概率或ID、安全行和以422拒绝。任务提交时同时冻结profile与所选trace，之后修订源记录不影响worker输入或批准快照。
 
 MySQL累计logL及最大归一delta列用DOUBLE(asdecimal=False)，保持Python float。当前MySQL JSON读回与DOUBLE列在累计logL约−969时可差1ULP（约1.14e−13），验收按2ULP检查，完整结果保留实际读回数值。
 

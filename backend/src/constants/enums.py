@@ -12,3 +12,7 @@ class NoteStatus(StrEnum):
  DRAFT='draft'
  APPROVED='approved'
  REJECTED='rejected'
+class BatchStatus(StrEnum):
+ PENDING='pending'
+ APPLIED='applied'
+ CONFLICTED='conflicted'

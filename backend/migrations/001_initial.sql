@@ -1,4 +1,5 @@
 -- Initial schema by SQLAlchemy metadata; create_all, not a production migration runner.
--- sequence_studies(symbols JSON), observation_traces(study_id,reference UNIQUE,tokens JSON)
+-- sequence_studies(symbols JSON), observation_traces(study_id,reference UNIQUE,tokens JSON,revision INT 乐观版本)
+-- trace_correction_batches(status pending/applied/conflicted,items JSON 改前改后与base_revision,conflicts JSON)
 -- model_profiles(parameters JSON,normalization_max_delta DOUBLE), inference_runs(profile_snapshot JSON,trace_snapshot JSON,result JSON,total_log_likelihood DOUBLE)
 -- interpretation_notes(result_snapshot JSON), users, audit_logs. DOUBLE mappings use asdecimal=False.

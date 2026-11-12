@@ -8,3 +8,4 @@ class ObservationTrace(Base):
  study_id:Mapped[int]=mapped_column(ForeignKey('sequence_studies.id'))
  reference:Mapped[str]=mapped_column(String(100))
  tokens:Mapped[list]=mapped_column(JSON)
+ revision:Mapped[int]=mapped_column(default=0,server_default='0')
